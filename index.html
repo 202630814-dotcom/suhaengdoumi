@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수행도우미</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --primary-hover: #357ABD;
+            --bg-color: #F4F7F9;
+            --card-bg: #FFFFFF;
+            --text-color: #333333;
+            --border-color: #E1E4E8;
+            --danger-color: #FF5A5F;
+            --dday-urgent: #FF4757;
+            --dday-soon: #FFA502;
+            --dday-normal: #2ED573;
+            --tab-active-bg: #EBF3FE;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 6px;
+            transition: color 0.3s;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+
+        /* 탭 버튼 */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #888;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            background-color: var(--tab-active-bg);
+        }
+
+        /* 폼 영역 */
+        .form-card {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .input-group input {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* 표 영역 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: rgba(0, 0, 0, 0.02);
+            font-weight: 600;
+        }
+
+        .badge-dday {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: white;
+            text-align: center;
+        }
+
+        .dday-red { background-color: var(--dday-urgent); }
+        .dday-orange { background-color: var(--dday-soon); }
+        .dday-green { background-color: var(--dday-normal); }
+        .dday-gray { background-color: #A0AEC0; }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        /* 달력 영역 */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .calendar-header h3 {
+            font-size: 1.2rem;
+        }
+
+        .btn-nav {
+            background: var(--tab-active-bg);
+            border: none;
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            padding: 8px 0;
+            opacity: 0.7;
+        }
+
+        .calendar-cell {
+            min-height: 85px;
+            background: rgba(0, 0, 0, 0.015);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .calendar-cell.empty {
+            background: transparent;
+            border: none;
+        }
+
+        .day-number {
+            font-size: 0.8rem;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        .event-tag {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 꾸미기(테마) 탭 스타일 */
+        .theme-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .custom-color-picker {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .custom-color-picker label {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker-input {
+            width: 50px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .palette-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.02);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .palette-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+        }
+
+        .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .color-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .hidden { display: none; }
+        .empty-msg { text-align: center; padding: 30px; opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="appTitle">📚 수행도우미</h1>
+            <p>수행평가 날짜부터 D-Day까지 한눈에 꼼꼼하게 관리하세요!</p>
+        </header>
+
+        <!-- 메인 상단 탭 -->
+        <div class="view-toggle">
+            <button class="tab-btn active" id="tabTable" onclick="switchView('table')">📋 표로 보기</button>
+            <button class="tab-btn" id="tabCalendar" onclick="switchView('calendar')">📅 달력으로 보기</button>
+            <button class="tab-btn" id="tabTheme" onclick="switchView('theme')">🎨 꾸미기</button>
+        </div>
+
+        <!-- 1. 표 보기 (등록 폼 + 목록) -->
+        <div id="tableView">
+            <section class="form-card">
+                <form id="assessmentForm">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="dateInput">수행 날짜</label>
+                            <input type="date" id="dateInput" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="subjectInput">과목명</label>
+                            <input type="text" id="subjectInput" placeholder="예: 수학, 국어" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="contentInput">간단한 내용</label>
+                            <input type="text" id="contentInput" placeholder="예: 단원 평가 발표" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit">등록 완료</button>
+                </form>
+            </section>
+
+            <section class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 18%;">D-Day</th>
+                            <th style="width: 22%;">날짜</th>
+                            <th style="width: 20%;">과목</th>
+                            <th>내용</th>
+                            <th style="width: 10%;">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <div id="tableEmptyMsg" class="empty-msg hidden">등록된 수행평가 일정이 없습니다.</div>
+            </section>
+        </div>
+
+        <!-- 2. 달력 보기 -->
+        <section id="calendarView" class="hidden">
+            <div class="calendar-header">
+                <button class="btn-nav" onclick="changeMonth(-1)">◀ 이전달</button>
+                <h3 id="calendarMonthTitle"></h3>
+                <button class="btn-nav" onclick="changeMonth(1)">다음달 ▶</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <!-- 3. 꾸미기(테마 선택) 보기 -->
+        <section id="themeView" class="hidden theme-section">
+            <div class="custom-color-picker">
+                <label for="colorPicker">🌈 세상의 모든 색 자유 선택 (Color Wheel)</label>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="colorPicker" class="color-picker-input" onchange="applyCustomColor(this.value)">
+                </div>
+            </div>
+
+            <div>
+                <h4 style="margin-bottom: 12px; font-size: 1rem;">✨ 테마 팔레트 (20가지 추천 색상)</h4>
+                <div class="palette-grid" id="paletteGrid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // 20가지 색상 데이터 정의
+        const colorPalette = [
+            { name: "클래식 블루", color: "#4A90E2" },
+            { name: "에메랄드 오션", color: "#00B894" },
+            { name: "싱그러운 민트", color: "#2ED573" },
+            { name: "깊은 포레스트", color: "#2E7D32" },
+            { name: "체리 블라썸", color: "#FF75A0" },
+            { name: "피치 코랄", color: "#FF6B6B" },
+            { name: "달콤한 귤색", color: "#FFA502" },
+            { name: "상큼한 레몬", color: "#ECCC68" },
+            { name: "로열 퍼플", color: "#70A1FF" },
+            { name: "붉은 보라", color: "#8E24AA" },
+            { name: "버건디 와인", color: "#800020" },
+            { name: "샌드 베이지", color: "#D4A373" },
+            { name: "샴페인 골드", color: "#D4AF37" },
+            { name: "포도 주스", color: "#6C5CE7" },
+            { name: "세이지 그린", color: "#84A98C" },
+            { name: "따뜻한 브라운", color: "#795548" },
+            { name: "딥 틸", color: "#008080" },
+            { name: "핫 핑크", color: "#FF1493" },
+            { name: "슬레이트 뷰티", color: "#708090" },
+            { name: "미드나잇 다크", color: "#2F3542" }
+        ];
+
+        let assessments = JSON.parse(localStorage.getItem('assessments')) || [];
+        let currentCalendarDate = new Date();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('dateInput').value = new Date().toISOString().substring(0, 10);
+            renderTable();
+            renderCalendar();
+            renderPalette();
+
+            // 저장된 테마 불러오기
+            const savedColor = localStorage.getItem('userThemeColor') || '#4A90E2';
+            applyCustomColor(savedColor);
+            document.getElementById('colorPicker').value = savedColor;
+        });
+
+        // 일정 등록
+        document.getElementById('assessmentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const date = document.getElementById('dateInput').value;
+            const subject = document.getElementById('subjectInput').value.trim();
+            const content = document.getElementById('contentInput').value.trim();
+
+            assessments.push({ id: Date.now(), date, subject, content });
+            saveData();
+            
+            document.getElementById('subjectInput').value = '';
+            document.getElementById('contentInput').value = '';
+
+            renderTable();
+            renderCalendar();
+        });
+
+        function saveData() {
+            localStorage.setItem('assessments', JSON.stringify(assessments));
+        }
+
+        // D-Day 계산기
+        function calculateDDay(targetDateStr) {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const target = new Date(targetDateStr); target.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return { text: 'D-Day', class: 'dday-red' };
+            if (diffDays > 0 && diffDays <= 3) return { text: `D-${diffDays}`, class: 'dday-orange' };
+            if (diffDays > 0) return { text: `D-${diffDays}`, class: 'dday-green' };
+            return { text: `D+${Math.abs(diffDays)}`, class: 'dday-gray' };
+        }
+
+        // 표 렌더링
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyMsg = document.getElementById('tableEmptyMsg');
+            tbody.innerHTML = '';
+
+            if (assessments.length === 0) {
+                emptyMsg.classList.remove('hidden'); return;
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            assessments.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            assessments.forEach(item => {
+                const ddayInfo = calculateDDay(item.date);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="badge-dday ${ddayInfo.class}">${ddayInfo.text}</span></td>
+                    <td>${item.date}</td>
+                    <td><strong>${escapeHtml(item.subject)}</strong></td>
+                    <td>${escapeHtml(item.content)}</td>
+                    <td><button class="btn-delete" onclick="deleteItem(${item.id})">삭제</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // **확인 창(alert/confirm) 없이 즉시 삭제**
+        function deleteItem(id) {
+            assessments = assessments.filter(item => item.id !== id);
+            saveData();
+            renderTable();
+            renderCalendar();
+        }
+
+        // 탭 전환
+        function switchView(viewType) {
+            const tableView = document.getElementById('tableView');
+            const calendarView = document.getElementById('calendarView');
+            const themeView = document.getElementById('themeView');
+
+            const tabTable = document.getElementById('tabTable');
+            const tabCalendar = document.getElementById('tabCalendar');
+            const tabTheme = document.getElementById('tabTheme');
+
+            tableView.classList.add('hidden');
+            calendarView.classList.add('hidden');
+            themeView.classList.add('hidden');
+
+            tabTable.classList.remove('active');
+            tabCalendar.classList.remove('active');
+            tabTheme.classList.remove('active');
+
+            if (viewType === 'table') {
+                tableView.classList.remove('hidden');
+                tabTable.classList.add('active');
+            } else if (viewType === 'calendar') {
+                calendarView.classList.remove('hidden');
+                tabCalendar.classList.add('active');
+                renderCalendar();
+            } else if (viewType === 'theme') {
+                themeView.classList.remove('hidden');
+                tabTheme.classList.add('active');
+            }
+        }
+
+        // 달력 렌더링
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            document.getElementById('calendarMonthTitle').innerText = `${year}년 ${month + 1}월`;
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            ['일', '월', '화', '수', '목', '금', '토'].forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.innerText = day;
+                grid.appendChild(header);
+            });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-cell empty';
+                grid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= lastDate; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell';
+
+                const formattedMonth = String(month + 1).padStart(2, '0');
+                const formattedDay = String(day).padStart(2, '0');
+                const currentDateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+                const dayEvents = assessments.filter(item => item.date === currentDateStr);
+
+                let contentHtml = `<div class="day-number">${day}</div>`;
+                dayEvents.forEach(event => {
+                    contentHtml += `<div class="event-tag" title="${escapeHtml(event.subject)}: ${escapeHtml(event.content)}">[${escapeHtml(event.subject)}] ${escapeHtml(event.content)}</div>`;
+                });
+
+                cell.innerHTML = contentHtml;
+                grid.appendChild(cell);
+            }
+        }
+
+        function changeMonth(offset) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+            renderCalendar();
+        }
+
+        // 팔레트 목록 생성
+        function renderPalette() {
+            const container = document.getElementById('paletteGrid');
+            container.innerHTML = '';
+
+            colorPalette.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'palette-card';
+                card.onclick = () => {
+                    applyCustomColor(item.color);
+                    document.getElementById('colorPicker').value = item.color;
+                };
+                card.innerHTML = `
+                    <div class="color-dot" style="background-color: ${item.color};"></div>
+                    <span class="color-name">${item.name}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 색상 적용 (HEX 값을 파싱하여 CSS 변수 및 명도 자동 조절)
+        function applyCustomColor(hex) {
+            document.documentElement.style.setProperty('--primary-color', hex);
+            document.documentElement.style.setProperty('--primary-hover', adjustColor(hex, -20));
+            document.documentElement.style.setProperty('--tab-active-bg', hexToRgba(hex, 0.15));
+
+            localStorage.setItem('userThemeColor', hex);
+        }
+
+        // 색상 밝기 조정 유틸리티
+        function adjustColor(hex, percent) {
+            let num = parseInt(hex.replace('#', ''), 16),
+                amt = Math.round(2.55 * percent),
+                R = (num >> 16) + amt,
+                G = (num >> 8 & 0x00FF) + amt,
+                B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+
+        function hexToRgba(hex, alpha) {
+            let c = hex.replace('#', '');
+            if (c.length === 3) c = c.split('').map(x => x + x).join('');
+            let num = parseInt(c, 16);
+            return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
