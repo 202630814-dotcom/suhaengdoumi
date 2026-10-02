@@ -47,7 +47,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         header h1 {
@@ -60,6 +60,68 @@
         header p {
             font-size: 0.95rem;
             opacity: 0.8;
+        }
+
+        /* D-Day & D-1 전용 상단 긴급 알림 대시보드 */
+        .urgent-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .urgent-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .urgent-card.d-day {
+            background-color: #FFF0F0;
+            border: 1.5px solid #FFCDD2;
+            color: #C62828;
+        }
+
+        .urgent-card.d-1 {
+            background-color: #FFF8E1;
+            border: 1.5px solid #FFE082;
+            color: #E65100;
+        }
+
+        .urgent-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .urgent-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .badge-dday-tag { background-color: #FF4757; }
+        .badge-d1-tag { background-color: #FFA502; }
+
+        .urgent-subtext {
+            font-size: 0.85rem;
+            font-weight: bold;
+            opacity: 0.85;
+            white-space: nowrap;
         }
 
         /* 탭 버튼 */
@@ -337,7 +399,7 @@
             font-weight: 600;
         }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .empty-msg { text-align: center; padding: 30px; opacity: 0.6; }
     </style>
 </head>
@@ -347,6 +409,9 @@
             <h1 id="appTitle">📚 수행도우미</h1>
             <p>수행평가 날짜부터 D-Day까지 한눈에 꼼꼼하게 관리하세요!</p>
         </header>
+
+        <!-- 🔥 D-Day 및 D-1 전용 상단 강동 알림 영역 -->
+        <div id="urgentSection" class="urgent-section hidden"></div>
 
         <!-- 메인 상단 탭 -->
         <div class="view-toggle">
@@ -414,34 +479,33 @@
             </div>
 
             <div>
-                <h4 style="margin-bottom: 12px; font-size: 1rem;">✨ 테마 팔레트 (20가지 추천 색상)</h4>
+                <h4 style="margin-bottom: 12px; font-size: 1rem;">✨ 무지개 7색 & 추천 테마 팔레트</h4>
                 <div class="palette-grid" id="paletteGrid"></div>
             </div>
         </section>
     </div>
 
     <script>
-        // 20가지 색상 데이터 정의
+        // 무지개 7색 및 추천 색상 목록
         const colorPalette = [
+            { name: "❤️ 빨강 (Red)", color: "#FF3B30" },
+            { name: "🧡 주황 (Orange)", color: "#FF9500" },
+            { name: "💛 노랑 (Yellow)", color: "#FFCC00" },
+            { name: "💚 초록 (Green)", color: "#34C759" },
+            { name: "💙 파랑 (Blue)", color: "#007AFF" },
+            { name: "🫐 남색 (Indigo)", color: "#1A237E" },
+            { name: "💜 보라 (Violet)", color: "#AF52DE" },
             { name: "클래식 블루", color: "#4A90E2" },
             { name: "에메랄드 오션", color: "#00B894" },
-            { name: "싱그러운 민트", color: "#2ED573" },
-            { name: "깊은 포레스트", color: "#2E7D32" },
             { name: "체리 블라썸", color: "#FF75A0" },
             { name: "피치 코랄", color: "#FF6B6B" },
-            { name: "달콤한 귤색", color: "#FFA502" },
-            { name: "상큼한 레몬", color: "#ECCC68" },
-            { name: "로열 퍼플", color: "#70A1FF" },
             { name: "붉은 보라", color: "#8E24AA" },
             { name: "버건디 와인", color: "#800020" },
             { name: "샌드 베이지", color: "#D4A373" },
-            { name: "샴페인 골드", color: "#D4AF37" },
             { name: "포도 주스", color: "#6C5CE7" },
             { name: "세이지 그린", color: "#84A98C" },
             { name: "따뜻한 브라운", color: "#795548" },
             { name: "딥 틸", color: "#008080" },
-            { name: "핫 핑크", color: "#FF1493" },
-            { name: "슬레이트 뷰티", color: "#708090" },
             { name: "미드나잇 다크", color: "#2F3542" }
         ];
 
@@ -450,6 +514,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('dateInput').value = new Date().toISOString().substring(0, 10);
+            renderUrgentSection();
             renderTable();
             renderCalendar();
             renderPalette();
@@ -473,6 +538,7 @@
             document.getElementById('subjectInput').value = '';
             document.getElementById('contentInput').value = '';
 
+            renderUrgentSection();
             renderTable();
             renderCalendar();
         });
@@ -481,16 +547,64 @@
             localStorage.setItem('assessments', JSON.stringify(assessments));
         }
 
-        // D-Day 계산기
-        function calculateDDay(targetDateStr) {
+        // 날짜 차이 계산 (일 수 단위)
+        function calculateDiffDays(targetDateStr) {
             const today = new Date(); today.setHours(0, 0, 0, 0);
             const target = new Date(targetDateStr); target.setHours(0, 0, 0, 0);
-            const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+            return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+        }
 
+        // D-Day 정보 계산
+        function calculateDDay(targetDateStr) {
+            const diffDays = calculateDiffDays(targetDateStr);
             if (diffDays === 0) return { text: 'D-Day', class: 'dday-red' };
             if (diffDays > 0 && diffDays <= 3) return { text: `D-${diffDays}`, class: 'dday-orange' };
             if (diffDays > 0) return { text: `D-${diffDays}`, class: 'dday-green' };
             return { text: `D+${Math.abs(diffDays)}`, class: 'dday-gray' };
+        }
+
+        // 🔥 D-Day 및 D-1 상단 전용 강조 알림판 렌더링
+        function renderUrgentSection() {
+            const section = document.getElementById('urgentSection');
+            section.innerHTML = '';
+
+            const todayEvents = assessments.filter(item => calculateDiffDays(item.date) === 0);
+            const tomorrowEvents = assessments.filter(item => calculateDiffDays(item.date) === 1);
+
+            if (todayEvents.length === 0 && tomorrowEvents.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+
+            // 1. 오늘 D-Day 카드
+            if (todayEvents.length > 0) {
+                const card = document.createElement('div');
+                card.className = 'urgent-card d-day';
+                card.innerHTML = `
+                    <div class="urgent-info">
+                        <span class="urgent-badge badge-dday-tag">🔥 오늘 (D-Day)</span>
+                        <strong>${todayEvents.map(e => `[${escapeHtml(e.subject)}]${escapeHtml(e.content)}`).join(' / ')}</strong>
+                    </div>
+                    <span class="urgent-subtext">오늘 제출/평가날입니다!</span>
+                `;
+                section.appendChild(card);
+            }
+
+            // 2. 내일 D-1 카드
+            if (tomorrowEvents.length > 0) {
+                const card = document.createElement('div');
+                card.className = 'urgent-card d-1';
+                card.innerHTML = `
+                    <div class="urgent-info">
+                        <span class="urgent-badge badge-d1-tag">⏰ 내일 (D-1)</span>
+                        <strong>${tomorrowEvents.map(e => `[${escapeHtml(e.subject)}]${escapeHtml(e.content)}`).join(' / ')}</strong>
+                    </div>
+                    <span class="urgent-subtext">최종 점검을 진행하세요!</span>
+                `;
+                section.appendChild(card);
+            }
         }
 
         // 표 렌더링
@@ -521,10 +635,11 @@
             });
         }
 
-        // **확인 창(alert/confirm) 없이 즉시 삭제**
+        // 클릭 시 즉시 삭제
         function deleteItem(id) {
             assessments = assessments.filter(item => item.id !== id);
             saveData();
+            renderUrgentSection();
             renderTable();
             renderCalendar();
         }
@@ -630,7 +745,7 @@
             });
         }
 
-        // 색상 적용 (HEX 값을 파싱하여 CSS 변수 및 명도 자동 조절)
+        // 색상 적용
         function applyCustomColor(hex) {
             document.documentElement.style.setProperty('--primary-color', hex);
             document.documentElement.style.setProperty('--primary-hover', adjustColor(hex, -20));
@@ -639,7 +754,6 @@
             localStorage.setItem('userThemeColor', hex);
         }
 
-        // 색상 밝기 조정 유틸리티
         function adjustColor(hex, percent) {
             let num = parseInt(hex.replace('#', ''), 16),
                 amt = Math.round(2.55 * percent),
